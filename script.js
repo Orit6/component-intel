@@ -1,4 +1,12 @@
-const NEXAR_API_KEY = "2a892b0b-5292-44b0-bbcd-3f96d8427690";
+const response = await fetch("https://api.nexar.com/graphql", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${NEXAR_API_KEY}`
+  },
+  body: JSON.stringify({ query })
+});
+
 
 async function searchPart() {
   const query = document.querySelector("input").value.trim();
@@ -60,4 +68,37 @@ function createResultsDiv() {
   div.className = "results";
   document.body.appendChild(div);
   return div;
+}
+async function searchPart(partNumber) {
+  const query = `
+    query {
+      supSearch(q: "${partNumber}", limit: 5) {
+        results {
+          part {
+            mpn
+            manufacturer {
+              name
+            }
+            specs {
+              attribute { name }
+              displayValue
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await fetch("https://api.nexar.com/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "token": NEXAR_API_KEY
+    },
+    body: JSON.stringify({ query })
+  });
+
+  const data = await response.json();
+  console.log("תוצאה מה־API:", data);
+  return data;
 }
