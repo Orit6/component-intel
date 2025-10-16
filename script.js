@@ -1,4 +1,4 @@
-const CLIENT_ID = "2a892b0b-5292-44b0-bbcd-3f96d8427690";
+const NEXAR_API_KEY = "2a892b0b-5292-44b0-bbcd-3f96d8427690";
 
 async function searchPart() {
   const query = document.querySelector("input").value.trim();
