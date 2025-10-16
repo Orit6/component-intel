@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Component Intel – Static Demo</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; margin:0; background:#f6f7f9; color:#111; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .card { background:#fff; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.06); padding:16px; margin-bottom:12px; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    input[type=text] { padding:10px 12px; border:1px solid #e3e5e9; border-radius:10px; outline: none; min-width:280px; background:#fafbfc; }
+    button { background:#111; color:#fff; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:600; }
+    button[disabled] { opacity:.5; cursor:not-allowed; }
+    .pill { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding: 6px 10px; font-size:12px; }
+    .pill-active { background:#ecfdf5; color:#047857; }
+    .pill-eol { background:#fff1f2; color:#be123c; }
+    table { width:100%; border-collapse: separate; border-spacing:0 6px; }
+    th { text-align:right; font-size:12px; color:#6b7280; padding:6px 10px; }
+    td { background:#f8fafc; padding:8px 10px; }
+    td:first-child { border-radius:10px 0 0 10px; }
+    td:last-child { border-radius:0 10px 10px 0; }
+    .subtle { color:#6b7280; font-size:12px; }
+    .section-title { font-weight:700; margin:8px 0; font-size:14px; }
+    .badge { display:inline-block; background:#eef2ff; color:#3730a3; padding:3px 8px; border-radius:999px; font-size:12px; }
+    .warn { background:#fffbeb; }
+    .diff { background:#fef3c7 !important; }
+    .tabs { display:flex; gap:8px; margin:8px 0; }
+    .tab { border-radius:10px; padding:8px 12px; background:#fff; box-shadow: 0 1px 2px rgba(0,0,0,.06); cursor:pointer; font-weight:600; }
+    .hidden { display:none; }
+    .footer { border-top:1px solid #eee; background:#fff; }
+    .footer .container { display:flex; justify-content:space-between; color:#6b7280; font-size:12px; }
+    .link { color:#1d4ed8; text-decoration:none; }
+    .table-wrap { overflow-x:auto; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="row" style="gap:12px; margin-bottom:10px;">
+      <div style="background:#111; color:#fff; width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-weight:800;">SE</div>
+      <div>
+        <div style="font-weight:800;">Component Intel – Static Demo</div>
+        <div class="subtle">חיפוש מק"ט | טעינת BOM | תחליפים (FFF)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:10px;">
+        <span class="subtle" style="font-weight:700;">מצב עבודה:</span>
+        <button id="modeSingle" class="">מק"ט יחיד</button>
+        <button id="modeBOM" class="">טעינת BOM</button>
+      </div>
+
+      <div id="singleBox" class="row">
+        <input type="text" id="mpnInput" placeholder='הכניסי מק"ט (למשל: 7916-15FN4)' />
+        <button id="searchBtn">חיפוש</button>
+      </div>
+
+      <div id="bomBox" class="hidden">
+        <div class="row">
+          <label class="subtle" style="border:1px dashed #e5e7eb; border-radius:10px; padding:8px 12px; cursor:pointer;">
+            העלאת קובץ BOM (XLSX/XLS/CSV)
+            <input type="file" id="bomFile" accept=".xlsx,.xls,.csv" style="display:none;" />
+          </label>
+          <span class="subtle">נדרש עמודת "MPN" או שהעמודה הראשונה תיחשב כמק"טים.</span>
+        </div>
+        <div class="card warn" id="bomQueueCard" style="margin-top:10px;">
+          <div class="subtle">עדיין לא נטען קובץ.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="detailArea" class="hidden">
+      <div class="tabs">
+        <div class="tab" data-tab="overview">נתוני רכיב</div>
+        <div class="tab" data-tab="alts">תחליפיים (FFF)</div>
+      </div>
+
+      <div id="tab-overview" class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div id="titleMPN" style="font-weight:800;">—</div>
+            <div class="subtle" id="titleMfg">—</div>
+          </div>
+          <div id="lifePill" class="pill pill-active hidden">Active</div>
+        </div>
+
+        <div id="desc" class="subtle" style="margin:8px 0 12px 0;">—</div>
+        <div class="card" style="padding:12px;">
+          <div class="row">
+            <div style="flex:1;">
+              <div class="section-title">פרמטרים</div>
+              <div id="kvList" class="subtle"></div>
+            </div>
+            <div style="flex:1;">
+              <div class="section-title">ציות</div>
+              <div id="compliance" class="subtle"></div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="section-title">מסמכים</div>
+            <div id="docs" class="subtle"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">מלאי אצל מפיצים</div>
+          <div class="table-wrap">
+            <table id="stockTable">
+              <thead>
+                <tr>
+                  <th>מפיץ</th><th>SKU</th><th>זמינות</th><th>MOQ</th><th>אריזה</th><th>מחירים לדוגמה</th><th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-alts" class="card hidden">
+        <div class="row">
+          <label class="subtle"><input type="checkbox" id="fltActive" checked /> Active בלבד</label>
+          <label class="subtle"><input type="checkbox" id="fltPkg" checked /> אותו מארז</label>
+        </div>
+        <div class="table-wrap" style="margin-top:8px;">
+          <table id="altsTable">
+            <thead>
+              <tr>
+                <th>מק"ט</th><th>יצרן</th><th>מארז</th><th>תיאור</th><th>Lifecycle</th><th>RoHS</th><th>REACH</th><th>ציון FFF</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top:10px;">
+          <div class="section-title">הבדלים בולטים מול המקור</div>
+          <div class="table-wrap">
+            <table id="deltaTable">
+              <thead>
+                <tr><th>מאפיין</th><th id="baseLabel">מקור</th><th>חלופה #1</th><th>חלופה #2</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="container">
+      <div>דמו. אין לראות במידע תחליף לאימות אצל היצרן/מפיץ מורשה.</div>
+      <div>© <span id="year"></span> Component Intel – Static Demo</div>
+    </div>
+  </div>
+
+<script>
+const demoDB = {
+  "7916-15FN4": {
+    mpn: "7916-15FN4",
+    manufacturer: "Oupiin",
+    description: "15-pos High Density D-Sub Receptacle, RA, Female, 3-Row, Screwlock 4-40, TH",
+    package: "D-Sub HD15 Receptacle, RA, TH",
+    pins: 15,
+    voltage: null,
+    current: "2A",
+    tempRange: "-55…105°C",
+    lifecycle: "Active",
+    compliance: {
+      rohs: true, reach: true, halogenFree: null, leadFree: true,
+      docs: [{ name: "Datasheet (Oupiin)", url: "https://example.com/ds/oupiin_7916-15FN4.pdf" }]
+    },
+    datasheetUrl: "https://example.com/ds/oupiin_7916-15FN4.pdf",
+    attributes: {
+      Gender: "Receptacle (Female)",
+      Orientation: "Right Angle",
+      Mounting: "Through Hole",
+      RowCount: "3",
+      Hardware: "4-40 Female Screwlock",
+      Shielding: "Standard",
+    },
+    distributors: [
+      { distributor: "DigiKey", sku: "OUPIIN-7916-15FN4-ND", qtyAvailable: 1240, moq: 1, packaging: "Cut Tape",
+        priceBreaks: [{qty:1, priceUSD:1.12}, {qty:100, priceUSD:0.92}, {qty:1000, priceUSD:0.79}],
+        buyUrl: "https://www.digikey.com/en/products/detail/oupiin/7916-15FN4/"
+      },
+      { distributor: "Mouser", sku: "806-7916-15FN4", qtyAvailable: 0, moq: 50, packaging: "Reel",
+        priceBreaks: [{qty:50, priceUSD:0.98}, {qty:1000, priceUSD:0.76}],
+        buyUrl: "https://www.mouser.com/ProductDetail/Oupiin/7916-15FN4"
+      },
+    ]
+  }
+};
+const demoAlts = {
+  "7916-15FN4": [
+    { mpn:"5747460-3", manufacturer:"TE Connectivity", description:"HD-15 Receptacle, RA, TH, 4-40 HW",
+      package:"HD15 Recept RA TH", pins:15, voltage:null, current:"2A", tempRange:"-55…105°C", lifecycle:"Active",
+      compliance:{rohs:true, reach:true, leadFree:true, halogenFree:null},
+      datasheetUrl:"https://example.com/ds/te_5747460-3.pdf", scoreFFF:96,
+      keyDiffs:{ RowCount:{base:"3", alt:"3"}, Hardware:{base:"4-40 Female Screwlock", alt:"4-40 Female Screwlock"}, Mounting:{base:"Through Hole", alt:"Through Hole"}, Orientation:{base:"Right Angle", alt:"Right Angle"} }
+    },
+    { mpn:"DFA15P-15S-1FP331UN", manufacturer:"Deltron / L-com", description:"HD15 Recept RA TH, 4-40, Shielded",
+      package:"HD15 Recept RA TH", pins:15, voltage:null, current:"2A", tempRange:"-55…105°C", lifecycle:"Active",
+      compliance:{rohs:true, reach:true, leadFree:true, halogenFree:null},
+      datasheetUrl:"https://example.com/ds/deltron_DFA15P-15S-1FP331UN.pdf", scoreFFF:92,
+      keyDiffs:{ Shielding:{base:"Standard", alt:"Shielded"} }
+    }
+  ]
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const fmt = (v) => (v==null || v==="" ? "—" : v);
+
+let currentBase = null;
+let currentAlts = [];
+
+function setMode(m) {
+  $("#singleBox").classList.toggle("hidden", m!=="single");
+  $("#bomBox").classList.toggle("hidden", m!=="bom");
+}
+function setTab(t) {
+  $("#tab-overview").classList.toggle("hidden", t!=="overview");
+  $("#tab-alts").classList.toggle("hidden", t!=="alts");
+}
+function setDetailVisible(v) { $("#detailArea").classList.toggle("hidden", !v); }
+
+function renderOverview(rec) {
+  $("#titleMPN").textContent = rec?.mpn || "—";
+  $("#titleMfg").textContent = rec?.manufacturer || "—";
+  $("#desc").textContent = rec?.description || "—";
+  const pill = $("#lifePill");
+  if (rec?.lifecycle) {
+    pill.textContent = rec.lifecycle;
+    pill.classList.remove("hidden");
+    pill.classList.toggle("pill-active", rec.lifecycle==="Active");
+    pill.classList.toggle("pill-eol", rec.lifecycle!=="Active");
+  } else {
+    pill.classList.add("hidden");
+  }
+
+  const kv = [];
+  kv.push(`<div>מארז: <b>${fmt(rec?.package)}</b></div>`);
+  kv.push(`<div>מס' פינים: <b>${fmt(rec?.pins)}</b></div>`);
+  kv.push(`<div>זרם עבודה: <b>${fmt(rec?.current)}</b></div>`);
+  kv.push(`<div>טווח טמפרטורה: <b>${fmt(rec?.tempRange)}</b></div>`);
+  if (rec?.attributes) {
+    for (const [k,v] of Object.entries(rec.attributes)) {
+      kv.push(`<div>${k}: <b>${fmt(v)}</b></div>`);
+    }
+  }
+  $("#kvList").innerHTML = kv.join("");
+
+  const comp = [];
+  const c = rec?.compliance || {};
+  comp.push(`<span class="badge">RoHS: ${c.rohs===true? "✔": c.rohs===false? "✖": "?"}</span>`);
+  comp.push(`<span class="badge">REACH: ${c.reach===true? "✔": c.reach===false? "✖": "?"}</span>`);
+  if ("leadFree" in (c||{})) comp.push(`<span class="badge">Lead-Free: ${c.leadFree===true? "✔": c.leadFree===false? "✖": "?"}</span>`);
+  if ("halogenFree" in (c||{})) comp.push(`<span class="badge">Halogen-Free: ${c.halogenFree===true? "✔": c.halogenFree===false? "✖": "?"}</span>`);
+  $("#compliance").innerHTML = comp.join(" ");
+
+  const docs = (c.docs||[]).map(d => `<div><a class="link" href="${d.url}" target="_blank">${d.name}</a></div>`);
+  $("#docs").innerHTML = docs.join("") || "<span class='subtle'>—</span>";
+
+  const body = $("#stockTable tbody");
+  body.innerHTML = "";
+  (rec?.distributors||[]).forEach(row => {
+    const prices = (row.priceBreaks||[]).map(pb => `<span class="badge">${pb.qty}+ @ $${pb.priceUSD.toFixed(2)}</span>`).join(" ");
+    const link = row.buyUrl ? `<a class="link" href="${row.buyUrl}" target="_blank">קנייה</a>` : "";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${row.distributor}</td><td dir="ltr">${row.sku}</td><td>${fmt(row.qtyAvailable)}</td><td>${fmt(row.moq)}</td><td>${fmt(row.packaging)}</td><td>${prices||"—"}</td><td style="text-align:left;">${link}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderAlts(base, alts) {
+  const fltActive = $("#fltActive").checked;
+  const fltPkg = $("#fltPkg").checked;
+  const filtered = alts.filter(a => (!fltActive || a.lifecycle==="Active") && (!fltPkg || !base.package || a.package===base.package));
+
+  const tbody = $("#altsTable tbody");
+  tbody.innerHTML = "";
+  filtered.forEach(a => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = \`<td dir="ltr"><a class="link" href="\${a.datasheetUrl||'#'}" target="_blank">\${a.mpn}</a></td>
+                     <td>\${a.manufacturer}</td>
+                     <td>\${fmt(a.package)}</td>
+                     <td>\${fmt(a.description)}</td>
+                     <td><span class="pill \${a.lifecycle==='Active'?'pill-active':'pill-eol'}">\${a.lifecycle}</span></td>
+                     <td>\${a.compliance.rohs===true?'✔':a.compliance.rohs===false?'✖':'?'}</td>
+                     <td>\${a.compliance.reach===true?'✔':a.compliance.reach===false?'✖':'?'}</td>
+                     <td><b>\${a.scoreFFF}%</b></td>\`;
+    tbody.appendChild(tr);
+  });
+
+  $("#baseLabel").textContent = "מקור: " + (base?.mpn || "—");
+  const dBody = $("#deltaTable tbody");
+  dBody.innerHTML = "";
+
+  const fields = [
+    ["Package", base?.package],
+    ["Pins", base?.pins],
+    ["Current", base?.current],
+    ["TempRange", base?.tempRange],
+    ["Orientation", base?.attributes?.Orientation],
+    ["Mounting", base?.attributes?.Mounting],
+    ["RowCount", base?.attributes?.RowCount],
+    ["Hardware", base?.attributes?.Hardware],
+    ["Shielding", base?.attributes?.Shielding],
+  ];
+
+  const firstTwo = filtered.slice(0,2);
+  fields.forEach(([k, baseVal]) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = \`<td>\${k}</td><td>\${fmt(baseVal)}</td>\`;
+    firstTwo.forEach(a => {
+      let altVal = a.keyDiffs?.[k]?.alt;
+      if (altVal==null) {
+        if (k==="Package") altVal = a.package;
+        else if (k==="Pins") altVal = a.pins;
+        else if (k==="Current") altVal = a.current;
+        else if (k==="TempRange") altVal = a.tempRange;
+      }
+      const equal = String(fmt(baseVal))===String(fmt(altVal));
+      const td = document.createElement("td");
+      td.textContent = fmt(altVal);
+      if (!equal) td.classList.add("diff");
+      tr.appendChild(td);
+    });
+    dBody.appendChild(tr);
+  });
+}
+
+async function searchMPN(mpn) {
+  // mock only
+  await new Promise(r => setTimeout(r, 250));
+  return demoDB[mpn] || null;
+}
+async function fetchAlts(mpn) {
+  await new Promise(r => setTimeout(r, 250));
+  return demoAlts[mpn] || [];
+}
+
+function showDetail(rec, alts) {
+  currentBase = rec; currentAlts = alts;
+  setDetailVisible(true);
+  setTab("overview");
+  renderOverview(rec);
+  renderAlts(rec, alts);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("year").textContent = new Date().getFullYear();
+  setMode("single");
+  setTab("overview");
+
+  $("#modeSingle").onclick = () => setMode("single");
+  $("#modeBOM").onclick = () => setMode("bom");
+
+  $("#searchBtn").onclick = async () => {
+    const mpn = $("#mpnInput").value.trim();
+    if (!mpn) return;
+    const rec = await searchMPN(mpn);
+    const alts = rec ? await fetchAlts(mpn) : [];
+    if (!rec) { alert("לא נמצא רכיב למק"ט הזה בדמו."); return; }
+    showDetail(rec, alts);
+  };
+
+  $("#fltActive").onchange = () => currentBase && renderAlts(currentBase, currentAlts);
+  $("#fltPkg").onchange = () => currentBase && renderAlts(currentBase, currentAlts);
+
+  $("#bomFile").onchange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const card = $("#bomQueueCard");
+    card.innerHTML = "";
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+    let mpnCol = 0;
+    const header = (rows[0]||[]).map(x => String(x).trim().toLowerCase());
+    const aliases = ["mpn","part","pn","mfg part","מק"ט"];
+    const idx = header.findIndex(h => aliases.some(k => h.includes(k)));
+    if (idx>=0) mpnCol = idx;
+
+    const list = [];
+    for (let i=1;i<rows.length;i++) {
+      const v = String(rows[i]?.[mpnCol]||"").trim();
+      if (v) list.push(v);
+    }
+    const unique = Array.from(new Set(list)).slice(0,500);
+
+    const table = document.createElement("table");
+    table.innerHTML = "<thead><tr><th>MPN</th><th>סטטוס</th><th>יצרן</th><th>Lifecycle</th><th>מפיצים</th><th>סה"כ מלאי</th><th># תחליפים</th><th>FFF Top</th><th></th></tr></thead>";
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+    card.appendChild(table);
+
+    const rowsState = unique.map(m => ({ mpn:m, status:"ממתין", data:null, alts:[] }));
+
+    // process in small chunks
+    const chunk = 3;
+    for (let i=0;i<rowsState.length;i+=chunk) {
+      const slice = rowsState.slice(i,i+chunk);
+      await Promise.all(slice.map(async r => {
+        r.status = "מעבד…";
+        renderRows();
+        try {
+          const base = await searchMPN(r.mpn);
+          if (!base) { r.status = "לא נמצא"; r.data=null; return; }
+          const alts = await fetchAlts(r.mpn);
+          r.data = base; r.alts = alts; r.status = "הושלם";
+        } catch(e) { r.status = "שגיאה"; }
+      }));
+    }
+
+    function renderRows() {
+      tbody.innerHTML = "";
+      rowsState.forEach(r => {
+        const stock = (r.data?.distributors||[]).reduce((a,d)=>a+(d.qtyAvailable||0),0);
+        const distCount = (r.data?.distributors||[]).length;
+        const topScore = (r.alts||[]).reduce((m,a)=>Math.max(m,a.scoreFFF),0);
+        const tr = document.createElement("tr");
+        tr.innerHTML = \`<td dir="ltr">\${r.mpn}</td><td>\${r.status}</td><td>\${r.data?.manufacturer||"—"}</td>
+                        <td>\${r.data?.lifecycle||"—"}</td><td>\${distCount||"—"}</td><td>\${stock||"—"}</td>
+                        <td>\${(r.alts||[]).length||"—"}</td><td>\${topScore||"—"}</td>
+                        <td><button \${r.data?"":"disabled"}>פתיחה</button></td>\`;
+        const btn = tr.querySelector("button");
+        btn.onclick = () => { if (r.data) showDetail(r.data, r.alts); };
+        tbody.appendChild(tr);
+      });
+    }
+    renderRows();
+  };
+});
+</script>
+</body>
+</html>
