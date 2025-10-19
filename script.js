@@ -1,18 +1,17 @@
 const CLIENT_ID = "2a892b0b-5292-44b0-bbcd-3f96d8427690";
 const CLIENT_SECRET = "uVMlNG4Lld9AiaPBe-ZVC7v59-HZ_UCuW1Ab";
 
-// פונקציה לקבלת Access Token
 async function getAccessToken() {
   const response = await fetch("https://identity.nexar.com/connect/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `grant_type=client_credentials&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&scope=supply.domain`,
   });
+
   const data = await response.json();
   return data.access_token;
 }
 
-// מאזין ללחיצה על כפתור "חיפוש"
 document.getElementById("searchBtn").addEventListener("click", async () => {
   const partNumber = document.getElementById("pnInput").value.trim();
   const resultsDiv = document.getElementById("results");
