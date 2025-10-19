@@ -36,6 +36,15 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+  <div class="search-container" style="text-align:center; margin-top:40px;">
+  <input id="pnInput" type="text" placeholder="הכניסי מק״ט רכיב לחיפוש" style="padding:8px; width:240px;">
+  <button id="searchBtn" style="padding:8px 14px; background:#111; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+    חיפוש
+  </button>
+</div>
+
+<div id="results" class="results" style="margin-top:30px; text-align:center; font-family:Arial;"></div>
+
   <div class="container">
     <div class="row" style="gap:12px; margin-bottom:10px;">
       <div style="background:#111; color:#fff; width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-weight:800;">SE</div>
