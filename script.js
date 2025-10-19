@@ -1,36 +1,43 @@
-// 🔹 Nexar API key שלך
 const NEXAR_API_KEY = "2a892b0b-5292-44b0-bbcd-3f96d8427690";
 
-// 🔹 פונקציה שמבצעת את החיפוש בפועל
-async function fetchAndDisplayPart(pn) {
+document.getElementById("searchBtn").addEventListener("click", async () => {
+  const partNumber = document.getElementById("pnInput").value.trim();
   const resultsDiv = document.getElementById("results");
-  resultsDiv.innerHTML = "🔎 מחפש נתונים...";
 
-  const query = `
-    query {
-      supSearch(q: "${pn}", limit: 1) {
-        results {
-          part {
-            mpn
-            manufacturer { name }
-            description
-            lifecycle
-            bestImage { url }
-            octopartUrl
+  if (!partNumber) {
+    resultsDiv.innerHTML = "❗ אנא הקלידי מק״ט לחיפוש.";
+    return;
+  }
+
+  resultsDiv.innerHTML = "⏳ מחפש נתונים...";
+
+  const query = {
+    query: `
+      query {
+        supSearch(q: "${partNumber}", limit: 1) {
+          results {
+            part {
+              mpn
+              manufacturer { name }
+              description
+              octopartUrl
+              bestImage { url }
+              lifecycle
+            }
           }
         }
       }
-    }
-  `;
+    `,
+  };
 
   try {
     const response = await fetch("https://api.nexar.com/graphql", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${NEXAR_API_KEY}\`
+        "Authorization": `Bearer ${NEXAR_API_KEY}`,
       },
-      body: JSON.stringify({ query })
+      body: JSON.stringify(query),
     });
 
     const data = await response.json();
@@ -42,36 +49,18 @@ async function fetchAndDisplayPart(pn) {
     }
 
     const part = items[0].part;
-
     resultsDiv.innerHTML = `
       <div class="card">
         <h3>${part.mpn}</h3>
         <p><b>יצרן:</b> ${part.manufacturer?.name ?? "-"}</p>
         <p><b>תיאור:</b> ${part.description ?? "-"}</p>
-        <p><b>סטטוס:</b> ${part.lifecycle ?? "-"}</p>
+        <p><b>מצב חיי מוצר:</b> ${part.lifecycle ?? "-"}</p>
         ${part.bestImage?.url ? `<img src="${part.bestImage.url}" width="120">` : ""}
-        ${part.octopartUrl ? `<p><a href="${part.octopartUrl}" target="_blank">פתח ב-Octopart 🔗</a></p>` : ""}
+        <p><a href="${part.octopartUrl}" target="_blank">🔗 פתיחת Octopart</a></p>
       </div>
     `;
-  } catch (err) {
-    console.error(err);
-    resultsDiv.innerHTML = "❌ שגיאה בעת שליפת הנתונים מה-API.";
+  } catch (error) {
+    console.error(error);
+    resultsDiv.innerHTML = "⚠️ שגיאה בעת קבלת הנתונים מהשרת.";
   }
-}
-
-// 🔹 חיבור כפתור “חיפוש” לאירוע הלחיצה
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("searchBtn");
-  const input = document.getElementById("pnInput");
-  const resultsDiv = document.getElementById("results");
-
-  btn.addEventListener("click", async () => {
-    const pn = input.value.trim();
-    if (!pn) {
-      resultsDiv.innerHTML = "⚠️ אנא הקלידי מק״ט לחיפוש.";
-      return;
-    }
-
-    await fetchAndDisplayPart(pn);
-  });
 });
