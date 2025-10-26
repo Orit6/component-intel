@@ -6,7 +6,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`https://api.trustedparts.com/v1/search?query=${encodeURIComponent(query)}`, {
+    const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+, {
       headers: {
         "Accept": "application/json"
       }
