@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`https://api.trustedparts.com/v1/search?query=${query}`);
+    const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
     if (!response.ok) {
       throw new Error(`TrustedParts API error: ${response.status}`);
     }
