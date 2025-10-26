@@ -6,12 +6,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+    const response = await fetch(`https://api.trustedparts.com/v1/search?query=${encodeURIComponent(query)}`, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
     if (!response.ok) {
       throw new Error(`TrustedParts API error: ${response.status}`);
     }
+
     const data = await response.json();
     res.status(200).json(data);
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
